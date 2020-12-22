@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as fs from 'fs';
+import {join} from 'path';
 import {getOpts, getDefaults, Tool} from './opts';
 import {installTool} from './installer';
 import type {OS} from './opts';
@@ -13,6 +14,12 @@ async function cabalConfig(): Promise<string> {
     listeners: {stdout: append, stderr: append}
   });
   return out.toString().trim().split('\n').slice(-1)[0].trim();
+}
+
+function stackConfig(): string {
+  const configDir = process.platform == 'win32' ? 'C:\\sr' : '/etc/stack';
+  fs.mkdirSync(configDir, {recursive: true});
+  return join(configDir, 'config.yaml');
 }
 
 export default async function run(
@@ -32,6 +39,12 @@ export default async function run(
       await core.group('Pre-installing GHC with stack', async () =>
         exec('stack', ['setup', opts.ghc.resolved])
       );
+
+    if (opts.stack.useSystemGHC) {
+      await core.group('Enabling system-ghc by default for stack', async () =>
+        fs.appendFileSync(stackConfig(), 'system-ghc: true')
+      );
+    }
 
     if (opts.cabal.enable)
       await core.group('Setting up cabal', async () => {

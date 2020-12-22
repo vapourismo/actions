@@ -873,6 +873,7 @@ const core = __importStar(__webpack_require__(470));
 const fs_1 = __webpack_require__(747);
 const js_yaml_1 = __webpack_require__(414);
 const path_1 = __webpack_require__(622);
+const os_1 = __webpack_require__(87);
 const supported_versions = __importStar(__webpack_require__(447));
 const rv = __importStar(__webpack_require__(859));
 const release_revisions = rv;
@@ -904,7 +905,12 @@ function getOpts({ ghc, cabal, stack }, os, inputs) {
     const stackNoGlobal = (inputs['stack-no-global'] || '') !== '';
     const stackSetupGhc = (inputs['stack-setup-ghc'] || '') !== '';
     const stackEnable = (inputs['enable-stack'] || '') !== '';
-    core.debug(`${stackNoGlobal}/${stackSetupGhc}/${stackEnable}`);
+    let enableCabal = (inputs['enable-cabal'] || '') !== '';
+    let enableGHC = (inputs['enable-ghc'] || '') !== '';
+    if (stackNoGlobal)
+        enableCabal = enableGHC = false;
+    const stackUseSystemGHC = (inputs['stack-use-system-ghc'] || '') !== '';
+    core.debug(`${stackNoGlobal}/${stackSetupGhc}/${stackEnable}/${stackUseSystemGHC}`);
     const verInpt = {
         ghc: inputs['ghc-version'] || ghc.version,
         cabal: inputs['cabal-version'] || cabal.version,
@@ -917,25 +923,32 @@ function getOpts({ ghc, cabal, stack }, os, inputs) {
     if (stackSetupGhc && !stackEnable) {
         errors.push('enable-stack is required if stack-setup-ghc is set');
     }
+    if (stackUseSystemGHC && !stackEnable) {
+        errors.push('enable-stack is required if stack-setup-ghc is set');
+    }
+    if (enableCabal && !enableGHC) {
+        errors.push('enable-cabal requires enable-ghc to be true');
+    }
     if (errors.length > 0) {
-        throw new Error(errors.join('\n'));
+        throw new Error(errors.join(os_1.EOL));
     }
     const opts = {
         ghc: {
             raw: verInpt.ghc,
             resolved: resolve(verInpt.ghc, ghc.supported, 'ghc', os),
-            enable: !stackNoGlobal
+            enable: enableGHC || !stackNoGlobal
         },
         cabal: {
             raw: verInpt.cabal,
             resolved: resolve(verInpt.cabal, cabal.supported, 'cabal', os),
-            enable: !stackNoGlobal
+            enable: enableCabal || !stackNoGlobal
         },
         stack: {
             raw: verInpt.stack,
             resolved: resolve(verInpt.stack, stack.supported, 'stack', os),
             enable: stackEnable,
-            setup: stackSetupGhc
+            setup: stackSetupGhc,
+            useSystemGHC: stackUseSystemGHC
         }
     };
     // eslint-disable-next-line github/array-foreach
@@ -8801,6 +8814,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
 const fs = __importStar(__webpack_require__(747));
+const path_1 = __webpack_require__(622);
 const opts_1 = __webpack_require__(54);
 const installer_1 = __webpack_require__(923);
 const exec_1 = __webpack_require__(986);
@@ -8813,6 +8827,11 @@ async function cabalConfig() {
     });
     return out.toString().trim().split('\n').slice(-1)[0].trim();
 }
+function stackConfig() {
+    const configDir = process.platform == 'win32' ? 'C:\\sr' : '/etc/stack';
+    fs.mkdirSync(configDir, { recursive: true });
+    return path_1.join(configDir, 'config.yaml');
+}
 async function run(inputs) {
     try {
         core.info('Preparing to setup a Haskell environment');
@@ -8822,6 +8841,9 @@ async function run(inputs) {
             await core.group(`Installing ${t} version ${resolved}`, async () => installer_1.installTool(t, resolved, os));
         if (opts.stack.setup)
             await core.group('Pre-installing GHC with stack', async () => exec_1.exec('stack', ['setup', opts.ghc.resolved]));
+        if (opts.stack.useSystemGHC) {
+            await core.group('Enabling system-ghc by default for stack', async () => fs.appendFileSync(stackConfig(), 'system-ghc: true'));
+        }
         if (opts.cabal.enable)
             await core.group('Setting up cabal', async () => {
                 await exec_1.exec('cabal', ['user-config', 'update'], { silent: true });

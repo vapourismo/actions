@@ -21,6 +21,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(require("@actions/core"));
 const fs = __importStar(require("fs"));
+const path_1 = require("path");
 const opts_1 = require("./opts");
 const installer_1 = require("./installer");
 const exec_1 = require("@actions/exec");
@@ -33,6 +34,11 @@ async function cabalConfig() {
     });
     return out.toString().trim().split('\n').slice(-1)[0].trim();
 }
+function stackConfig() {
+    const configDir = process.platform == 'win32' ? 'C:\\sr' : '/etc/stack';
+    fs.mkdirSync(configDir, { recursive: true });
+    return path_1.join(configDir, 'config.yaml');
+}
 async function run(inputs) {
     try {
         core.info('Preparing to setup a Haskell environment');
@@ -42,6 +48,9 @@ async function run(inputs) {
             await core.group(`Installing ${t} version ${resolved}`, async () => installer_1.installTool(t, resolved, os));
         if (opts.stack.setup)
             await core.group('Pre-installing GHC with stack', async () => exec_1.exec('stack', ['setup', opts.ghc.resolved]));
+        if (opts.stack.useSystemGHC) {
+            await core.group('Enabling system-ghc by default for stack', async () => fs.appendFileSync(stackConfig(), 'system-ghc: true'));
+        }
         if (opts.cabal.enable)
             await core.group('Setting up cabal', async () => {
                 await exec_1.exec('cabal', ['user-config', 'update'], { silent: true });

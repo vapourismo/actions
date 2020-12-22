@@ -16,10 +16,21 @@ inputs:
     default: 'latest'
   enable-stack:
     required: false
-    description: 'If specified, will setup Stack'
+    description: 'If specified, will install the specified version of stack globally'
+  enable-cabal:
+    required: false
+    description: 'If specified, will install the specified version of cabal-install globally'
+    default: 'true'
+  enable-ghc:
+    required: false
+    description: 'If specified, will install the specified version of GHC globally'
+    default: 'true'
+  stack-use-system-ghc:
+    required: false
+    description: 'If specified, enable-ghc must be set. Will configure stack to use the globally installed GHC.'
   stack-no-global:
     required: false
-    description: 'If specified, enable-stack must be set. Prevents installing GHC and Cabal globally'
+    description: 'If specified, enable-stack must be set. Prevents installing GHC and Cabal globally. Equivalent to setting both enable-ghc and enable-cabal to false'
   stack-setup-ghc:
     required: false
     description: 'If specified, enable-stack must be set. Will run stack setup to install the specified GHC'
@@ -32,6 +43,8 @@ outputs:
     description: 'The path of the stack executable _directory_'
   cabal-store:
     description: 'The path to the cabal store'
+  stack-root:
+    description: 'The path to the stack root'
   ghc-exe:
     description: 'The path of the ghc _executable_'
   cabal-exe:

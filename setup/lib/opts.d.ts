@@ -14,6 +14,7 @@ export interface Options {
     cabal: ProgramOpt;
     stack: ProgramOpt & {
         setup: boolean;
+        useSystemGHC: boolean;
     };
 }
 declare type Version = {

@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import {readFileSync} from 'fs';
 import {safeLoad} from 'js-yaml';
 import {join} from 'path';
+import {EOL} from 'os';
 import * as supported_versions from './versions.json';
 import * as rv from './release-revisions.json';
 
@@ -23,7 +24,7 @@ export interface ProgramOpt {
 export interface Options {
   ghc: ProgramOpt;
   cabal: ProgramOpt;
-  stack: ProgramOpt & {setup: boolean};
+  stack: ProgramOpt & {setup: boolean; useSystemGHC: boolean};
 }
 
 type Version = {version: string; supported: string[]};
@@ -73,7 +74,13 @@ export function getOpts(
   const stackNoGlobal = (inputs['stack-no-global'] || '') !== '';
   const stackSetupGhc = (inputs['stack-setup-ghc'] || '') !== '';
   const stackEnable = (inputs['enable-stack'] || '') !== '';
-  core.debug(`${stackNoGlobal}/${stackSetupGhc}/${stackEnable}`);
+  let enableCabal = (inputs['enable-cabal'] || '') !== '';
+  let enableGHC = (inputs['enable-ghc'] || '') !== '';
+  if (stackNoGlobal) enableCabal = enableGHC = false;
+  const stackUseSystemGHC = (inputs['stack-use-system-ghc'] || '') !== '';
+  core.debug(
+    `${stackNoGlobal}/${stackSetupGhc}/${stackEnable}/${stackUseSystemGHC}`
+  );
   const verInpt = {
     ghc: inputs['ghc-version'] || ghc.version,
     cabal: inputs['cabal-version'] || cabal.version,
@@ -89,26 +96,35 @@ export function getOpts(
     errors.push('enable-stack is required if stack-setup-ghc is set');
   }
 
+  if (stackUseSystemGHC && !stackEnable) {
+    errors.push('enable-stack is required if stack-setup-ghc is set');
+  }
+
+  if (enableCabal && !enableGHC) {
+    errors.push('enable-cabal requires enable-ghc to be true');
+  }
+
   if (errors.length > 0) {
-    throw new Error(errors.join('\n'));
+    throw new Error(errors.join(EOL));
   }
 
   const opts: Options = {
     ghc: {
       raw: verInpt.ghc,
       resolved: resolve(verInpt.ghc, ghc.supported, 'ghc', os),
-      enable: !stackNoGlobal
+      enable: enableGHC || !stackNoGlobal
     },
     cabal: {
       raw: verInpt.cabal,
       resolved: resolve(verInpt.cabal, cabal.supported, 'cabal', os),
-      enable: !stackNoGlobal
+      enable: enableCabal || !stackNoGlobal
     },
     stack: {
       raw: verInpt.stack,
       resolved: resolve(verInpt.stack, stack.supported, 'stack', os),
       enable: stackEnable,
-      setup: stackSetupGhc
+      setup: stackSetupGhc,
+      useSystemGHC: stackUseSystemGHC
     }
   };
 

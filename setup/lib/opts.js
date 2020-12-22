@@ -24,6 +24,7 @@ const core = __importStar(require("@actions/core"));
 const fs_1 = require("fs");
 const js_yaml_1 = require("js-yaml");
 const path_1 = require("path");
+const os_1 = require("os");
 const supported_versions = __importStar(require("./versions.json"));
 const rv = __importStar(require("./release-revisions.json"));
 const release_revisions = rv;
@@ -55,7 +56,12 @@ function getOpts({ ghc, cabal, stack }, os, inputs) {
     const stackNoGlobal = (inputs['stack-no-global'] || '') !== '';
     const stackSetupGhc = (inputs['stack-setup-ghc'] || '') !== '';
     const stackEnable = (inputs['enable-stack'] || '') !== '';
-    core.debug(`${stackNoGlobal}/${stackSetupGhc}/${stackEnable}`);
+    let enableCabal = (inputs['enable-cabal'] || '') !== '';
+    let enableGHC = (inputs['enable-ghc'] || '') !== '';
+    if (stackNoGlobal)
+        enableCabal = enableGHC = false;
+    const stackUseSystemGHC = (inputs['stack-use-system-ghc'] || '') !== '';
+    core.debug(`${stackNoGlobal}/${stackSetupGhc}/${stackEnable}/${stackUseSystemGHC}`);
     const verInpt = {
         ghc: inputs['ghc-version'] || ghc.version,
         cabal: inputs['cabal-version'] || cabal.version,
@@ -68,25 +74,32 @@ function getOpts({ ghc, cabal, stack }, os, inputs) {
     if (stackSetupGhc && !stackEnable) {
         errors.push('enable-stack is required if stack-setup-ghc is set');
     }
+    if (stackUseSystemGHC && !stackEnable) {
+        errors.push('enable-stack is required if stack-setup-ghc is set');
+    }
+    if (enableCabal && !enableGHC) {
+        errors.push('enable-cabal requires enable-ghc to be true');
+    }
     if (errors.length > 0) {
-        throw new Error(errors.join('\n'));
+        throw new Error(errors.join(os_1.EOL));
     }
     const opts = {
         ghc: {
             raw: verInpt.ghc,
             resolved: resolve(verInpt.ghc, ghc.supported, 'ghc', os),
-            enable: !stackNoGlobal
+            enable: enableGHC || !stackNoGlobal
         },
         cabal: {
             raw: verInpt.cabal,
             resolved: resolve(verInpt.cabal, cabal.supported, 'cabal', os),
-            enable: !stackNoGlobal
+            enable: enableCabal || !stackNoGlobal
         },
         stack: {
             raw: verInpt.stack,
             resolved: resolve(verInpt.stack, stack.supported, 'stack', os),
             enable: stackEnable,
-            setup: stackSetupGhc
+            setup: stackSetupGhc,
+            useSystemGHC: stackUseSystemGHC
         }
     };
     // eslint-disable-next-line github/array-foreach
