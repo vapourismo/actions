@@ -11329,13 +11329,26 @@ async function choco(tool, version) {
         core.addPath(getChocoPath(tool, version));
 }
 async function ghcupBin(os) {
+    // If ghcup already exists, upgrade it and use it. (this is the case on macOS)
+    const pathBin = await io_1.which('ghcup', false);
+    if (pathBin) {
+        await exec(pathBin, ['upgrade']);
+        return pathBin;
+    }
     const v = '0.1.12';
-    const cachedBin = tc.find('ghcup', v);
+    // Ensure date is in yyyy-mm-dd format so that cacheVer works with
+    // semver.clean which tc uses internally
+    // Date is wanted here to make sure we don't redownload ghcup too often, but
+    // also download it frequently enough that new versions of GHC are available
+    // correctly.
+    const d = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' });
+    const cacheVer = `${v}-${d}`;
+    const cachedBin = tc.find('ghcup', cacheVer);
     if (cachedBin)
         return path_1.join(cachedBin, 'ghcup');
     const bin = await tc.downloadTool(`https://downloads.haskell.org/ghcup/${v}/x86_64-${os === 'darwin' ? 'apple-darwin' : 'linux'}-ghcup-${v}`);
     await fs_1.promises.chmod(bin, 0o755);
-    return path_1.join(await tc.cacheFile(bin, 'ghcup', 'ghcup', v), 'ghcup');
+    return path_1.join(await tc.cacheFile(bin, 'ghcup', 'ghcup', cacheVer), 'ghcup');
 }
 async function ghcup(tool, version, os) {
     core.info(`Attempting to install ${tool} ${version} using ghcup`);

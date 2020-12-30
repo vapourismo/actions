@@ -200,8 +200,22 @@ async function choco(tool: Tool, version: string): Promise<void> {
 }
 
 async function ghcupBin(os: OS): Promise<string> {
+  // If ghcup already exists, upgrade it and use it. (this is the case on macOS)
+  const pathBin = await which('ghcup', false);
+  if (pathBin) {
+    await exec(pathBin, ['upgrade']);
+    return pathBin;
+  }
+
   const v = '0.1.12';
-  const cachedBin = tc.find('ghcup', v);
+  // Ensure date is in yyyy-mm-dd format so that cacheVer works with
+  // semver.clean which tc uses internally
+  // Date is wanted here to make sure we don't redownload ghcup too often, but
+  // also download it frequently enough that new versions of GHC are available
+  // correctly.
+  const d = new Date().toLocaleDateString('en-CA', {timeZone: 'UTC'});
+  const cacheVer = `${v}-${d}`;
+  const cachedBin = tc.find('ghcup', cacheVer);
   if (cachedBin) return join(cachedBin, 'ghcup');
 
   const bin = await tc.downloadTool(
@@ -210,7 +224,7 @@ async function ghcupBin(os: OS): Promise<string> {
     }-ghcup-${v}`
   );
   await fs.chmod(bin, 0o755);
-  return join(await tc.cacheFile(bin, 'ghcup', 'ghcup', v), 'ghcup');
+  return join(await tc.cacheFile(bin, 'ghcup', 'ghcup', cacheVer), 'ghcup');
 }
 
 async function ghcup(tool: Tool, version: string, os: OS): Promise<void> {
