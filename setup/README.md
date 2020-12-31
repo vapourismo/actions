@@ -98,14 +98,18 @@ jobs:
 
 ## Inputs
 
-| Name              | Required | Description                                                                                                                                    | Type      | Default |
-| ----------------- | :------: | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------- |
-| `ghc-version`     |          | GHC version to use, ex. `latest`                                                                                                               | string    | latest  |
-| `cabal-version`   |          | Cabal version to use, ex. `3.2`                                                                                                                | string    | latest  |
-| `stack-version`   |          | Stack version to use, ex. `latest`. Stack will only be installed if enable-stack is set.                                                       | string    | latest  |
-| `enable-stack`    |          | If specified, will setup Stack.                                                                                                                | "boolean" | false   |
-| `stack-no-global` |          | If specified, enable-stack must be set. Prevents installing GHC and Cabal globally                                                             | "boolean" | false   |
-| `stack-setup-ghc` |          | If specified, enable-stack must be set. Runs stack setup to install the specified GHC. (Note: setting this does _not_ imply `stack-no-global`) | "boolean" | false   |
+| Name              | Required | Description                                                                                                                                    | Type      | Default         |
+| ----------------- | :------: | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------- | --------------- |
+| `ghc-version`     |          | GHC version to use, ex. `latest`                                                                                                               | string    | latest          |
+| `cabal-version`   |          | Cabal version to use, ex. `3.2`                                                                                                                | string    | latest          |
+| `stack-version`   |          | Stack version to use, ex. `latest`. Stack will only be installed if enable-stack is set.                                                       | string    | latest          |
+| `enable-stack`    |          | If specified, will setup Stack.                                                                                                                | "boolean" | unset ("false") |
+| `stack-no-global` |          | If specified, enable-stack must be set. Prevents installing GHC and Cabal globally                                                             | "boolean" | unset ("false") |
+| `stack-setup-ghc` |          | If specified, enable-stack must be set. Runs stack setup to install the specified GHC. (Note: setting this does _not_ imply `stack-no-global`) | "boolean" | unset ("false") |
+
+Note:
+
+If an input is a "boolean" type, it is false if unset and true if set to a non-empty string.
 
 ## Outputs
 
