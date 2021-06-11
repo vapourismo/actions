@@ -156,7 +156,7 @@ export async function installTool(
       }
       await apt(tool, version);
       if (await isInstalled(tool, version, os)) return;
-      await ghcup(tool, version, os);
+      await ghcup(tool, versionz os);
       break;
     case 'win32':
       await choco(tool, version);
@@ -200,7 +200,7 @@ async function apt(tool: Tool, version: string): Promise<void> {
   const v = aptVersion(tool, version);
   core.info(`Attempting to install ${toolName} ${v} using apt-get`);
   // Ignore the return code so we can fall back to ghcup
-  await exec(`sudo -- sh -c "apt-get -y install ${toolName}-${v}"`);
+  const returnCode = await exec(`sudo -- sh -c "apt-get -y install ${toolName}-${v}"`);
 }
 
 async function choco(tool: Tool, version: string): Promise<void> {
@@ -228,7 +228,7 @@ async function choco(tool: Tool, version: string): Promise<void> {
 }
 
 async function ghcupBin(os: OS): Promise<string> {
-  const v = '0.1.14';
+  const v = '0.1.15.1';
   const cachedBin = tc.find('ghcup', v);
   if (cachedBin) return join(cachedBin, 'ghcup');
 
