@@ -11719,6 +11719,10 @@ const exec = async (cmd, args) => exec_1.exec(cmd, args, { ignoreReturnCode: tru
 function failed(tool, version) {
     throw new Error(`All install methods for ${tool} ${version} failed`);
 }
+const pathExists = async (p) => await fs_1.promises
+    .access(p)
+    .then(() => p)
+    .catch(() => undefined);
 async function configureOutputs(tool, path, os) {
     var _a;
     core.setOutput(`${tool}-path`, path);
@@ -11776,10 +11780,7 @@ async function isInstalled(tool, version, os) {
         }[os]
     };
     for (const p of locations[tool]) {
-        const installedPath = await fs_1.promises
-            .access(p)
-            .then(() => p)
-            .catch(() => undefined);
+        const installedPath = await pathExists(p);
         if (installedPath) {
             // Make sure that the correct ghc is used, even if ghcup has set a
             // default prior to this action being ran.
@@ -11789,13 +11790,10 @@ async function isInstalled(tool, version, os) {
         }
     }
     if (tool === 'cabal' && os !== 'win32') {
-        const installedPath = await fs_1.promises
-            .access(`${ghcupPath}/cabal-${version}`)
-            .then(() => ghcupPath)
-            .catch(() => undefined);
+        const installedPath = await pathExists(`${ghcupPath}/cabal-${version}`);
         if (installedPath) {
             await exec(await ghcupBin(os), ['set', tool, version]);
-            return success(tool, version, installedPath, os);
+            return success(tool, version, ghcupPath, os);
         }
     }
     return false;
@@ -11818,10 +11816,10 @@ async function installTool(tool, version, os) {
                 await ghcupGHCHead();
                 break;
             }
-            await apt(tool, version);
+            await ghcup(tool, version, os);
             if (await isInstalled(tool, version, os))
                 return;
-            await ghcup(tool, version, os);
+            await apt(tool, version);
             break;
         case 'win32':
             await choco(tool, version);

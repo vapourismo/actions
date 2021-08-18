@@ -17,6 +17,12 @@ function failed(tool: Tool, version: string): void {
   throw new Error(`All install methods for ${tool} ${version} failed`);
 }
 
+const pathExists = async (p: string): Promise<string | undefined> =>
+  await afs
+    .access(p)
+    .then(() => p)
+    .catch(() => undefined);
+
 async function configureOutputs(
   tool: Tool,
   path: string,
@@ -101,10 +107,7 @@ async function isInstalled(
   };
 
   for (const p of locations[tool]) {
-    const installedPath = await afs
-      .access(p)
-      .then(() => p)
-      .catch(() => undefined);
+    const installedPath = await pathExists(p);
 
     if (installedPath) {
       // Make sure that the correct ghc is used, even if ghcup has set a
@@ -117,14 +120,11 @@ async function isInstalled(
   }
 
   if (tool === 'cabal' && os !== 'win32') {
-    const installedPath = await afs
-      .access(`${ghcupPath}/cabal-${version}`)
-      .then(() => ghcupPath)
-      .catch(() => undefined);
+    const installedPath = await pathExists(`${ghcupPath}/cabal-${version}`);
 
     if (installedPath) {
       await exec(await ghcupBin(os), ['set', tool, version]);
-      return success(tool, version, installedPath, os);
+      return success(tool, version, ghcupPath, os);
     }
   }
 
@@ -153,9 +153,9 @@ export async function installTool(
         await ghcupGHCHead();
         break;
       }
-      await apt(tool, version);
-      if (await isInstalled(tool, version, os)) return;
       await ghcup(tool, version, os);
+      if (await isInstalled(tool, version, os)) return;
+      await apt(tool, version);
       break;
     case 'win32':
       await choco(tool, version);
