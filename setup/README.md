@@ -98,18 +98,19 @@ jobs:
 
 ## Inputs
 
-| Name              | Required | Description                                                                                                                              | Type      | Default     |
-| ----------------- | :------: | ---------------------------------------------------------------------------------------------------------------------------------------- | --------- | ----------- |
-| `ghc-version`     |          | GHC version to use, ex. `latest`                                                                                                         | string    | latest      |
-| `cabal-version`   |          | Cabal version to use, ex. `3.4`                                                                                                          | string    | latest      |
-| `stack-version`   |          | Stack version to use, ex. `latest`. Stack will only be installed if `enable-stack` is set.                                               | string    | latest      |
-| `enable-stack`    |          | If set, will setup Stack.                                                                                                                | "boolean" | false/unset |
-| `stack-no-global` |          | If set, enable-stack must be set. Prevents installing GHC and Cabal globally                                                             | "boolean" | false/unset |
-| `stack-setup-ghc` |          | If set, enable-stack must be set. Runs stack setup to install the specified GHC. (Note: setting this does _not_ imply `stack-no-global`) | "boolean" | false/unset |
-| `disable-matcher` |          | If set, disables match messages from GHC as GitHub CI annotations                                                                        | "boolean" | false/unset |
+| Name              | Required | Description                                                                                                                               | Type            | Default |
+| ----------------- | :------: | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ------- |
+| `ghc-version`     |          | GHC version to use, ex. `latest`                                                                                                          | string          | latest  |
+| `cabal-version`   |          | Cabal version to use, ex. `3.4`                                                                                                           | string          | latest  |
+| `stack-version`   |          | Stack version to use, ex. `latest`. Stack will only be installed if `enable-stack` is set.                                                | string          | latest  |
+| `enable-stack`    |          | If set, will setup Stack.                                                                                                                 | boolean         | false   |
+| `stack-no-global` |          | If set, enable-stack must be set. Prevents installing GHC and Cabal globally                                                              | boolean         | false   |
+| `stack-setup-ghc` |          | If set, enable-stack must be set. Runs stack setup to install the specified GHC. (Note: setting this does _not_ imply `stack-no-global`)  | boolean         | false   |
+| `disable-matcher` |          | If set, disables match messages from GHC as GitHub CI annotations                                                                         | boolean         | false   |
+| `ghcup-command`   |          | If specified, passes in the string to ghcup as a command. If given as a multiline string, each line will be passed to ghcup sequentially. | string/string[] | unset   |
 
-Note: "boolean" types are set/unset, not true/false.
-That is, setting any "boolean" to a value other than the empty string (`""`) will be considered true/set.
+Note: boolean types are any valid YAML 1.2 boolean.
+The empty string (`""`) is considered false for backwards compatibility.
 
 ## Outputs
 

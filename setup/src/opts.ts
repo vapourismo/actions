@@ -26,7 +26,7 @@ export interface Options {
   ghc: ProgramOpt;
   cabal: ProgramOpt;
   stack: ProgramOpt & {setup: boolean};
-  general: {matcher: {enable: boolean}};
+  general: {matcher: {enable: boolean}; ghcupCommand: string[]};
 }
 
 type Version = {version: string; supported: string[]};
@@ -72,16 +72,38 @@ function resolve(
   );
 }
 
+export const inputTypeMap = {
+  'ghc-version': 'string' as const,
+  'cabal-version': 'string' as const,
+  'stack-version': 'string' as const,
+  'enable-stack': 'boolean' as const,
+  'stack-no-global': 'boolean' as const,
+  'stack-setup-ghc': 'boolean' as const,
+  'disable-matcher': 'boolean' as const,
+  'ghcup-command': 'string[]' as const
+};
+
+interface InputTypeMap {
+  'ghc-version': string;
+  'cabal-version': string;
+  'stack-version': string;
+  'enable-stack': boolean;
+  'stack-no-global': boolean;
+  'stack-setup-ghc': boolean;
+  'disable-matcher': boolean;
+  'ghcup-command': string[];
+}
+
 export function getOpts(
   {ghc, cabal, stack}: Defaults,
   os: OS,
-  inputs: Record<string, string>
+  inputs: InputTypeMap
 ): Options {
   core.debug(`Inputs are: ${JSON.stringify(inputs)}`);
-  const stackNoGlobal = (inputs['stack-no-global'] || '') !== '';
-  const stackSetupGhc = (inputs['stack-setup-ghc'] || '') !== '';
-  const stackEnable = (inputs['enable-stack'] || '') !== '';
-  const matcherDisable = (inputs['disable-matcher'] || '') !== '';
+  const stackNoGlobal = (inputs['stack-no-global'] || false) !== '';
+  const stackSetupGhc = (inputs['stack-setup-ghc'] || false) !== '';
+  const stackEnable = (inputs['enable-stack'] || false) !== '';
+  const matcherDisable = (inputs['disable-matcher'] || false) !== '';
   core.debug(`${stackNoGlobal}/${stackSetupGhc}/${stackEnable}`);
   const verInpt = {
     ghc: inputs['ghc-version'] || ghc.version,
@@ -119,7 +141,10 @@ export function getOpts(
       enable: stackEnable,
       setup: stackSetupGhc
     },
-    general: {matcher: {enable: !matcherDisable}}
+    general: {
+      matcher: {enable: !matcherDisable},
+      ghcupCommand: inputs['ghcup-command']
+    }
   };
 
   // eslint-disable-next-line github/array-foreach
